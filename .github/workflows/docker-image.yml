@@ -7,12 +7,26 @@ on:
     branches: [ "master" ]
 
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v4
-    - name: Build the Docker image
-      run: docker build -t mineru-api:latest ./projects/web_api
+    
+    - name: Login to Alibaba Cloud ACR
+      env:
+        ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
+        ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+        ACR_REGISTRY: ${{ secrets.ACR_REGISTRY }}  # 例如: registry.cn-hangzhou.aliyuncs.com
+      run: |
+        echo "$ACR_PASSWORD" | docker login -u "$ACR_USERNAME" --password-stdin $ACR_REGISTRY
+    
+    - name: Build and Push Docker Image
+      env:
+        ACR_REGISTRY: ${{ secrets.ACR_REGISTRY }}
+        ACR_NAMESPACE: ${{ secrets.ACR_NAMESPACE }}  # 你的命名空间
+        IMAGE_NAME: mineru-api
+        IMAGE_TAG: latest
+      run: |
+        docker build -t $ACR_REGISTRY/$ACR_NAMESPACE/$IMAGE_NAME:$IMAGE_TAG ./projects/web_api
+        docker push $ACR_REGISTRY/$ACR_NAMESPACE/$IMAGE_NAME:$IMAGE_TAG
